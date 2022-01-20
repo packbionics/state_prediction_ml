@@ -1,6 +1,9 @@
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
+from pandas.core.groupby.generic import DataFrameGroupBy
+from pandas.io.formats.format import DataFrameFormatter
+from pathlib import Path
 
 
 class IMUDataset:
@@ -47,15 +50,11 @@ class IMUDataset:
         
         return new_head
         
-    def read_single_file(self, path):
-        df = pd.read_excel(path, header=None)
-        return df.dropna(axis=1)
-        
     def multi_concat(self, plot_features=False, plot_label=False):
         
         concat_df = pd.DataFrame()
         for file in os.listdir(self.path):
-            df = self.read_single_file(os.path.join(self.path, file))
+            df = read_single_file(os.path.join(self.path, file))
             concat_df = pd.concat((concat_df, df))
             
             # if plot_features and plot_label:
@@ -82,7 +81,7 @@ class IMUDataset:
                     
     def plot_each_feature(self, times=['Time_0', 'Time_1'], label='Angle_0'):
         for file in os.listdir(self.path):
-            # df = self.read_single_file(os.path.join(self.path, file))
+            # df = read_single_file(os.path.join(self.path, file))
             df = pd.read_excel(os.path.join(self.path, file))
             single_imu = IMUDataset(df=df)
             header = single_imu.grab_imu_header()
@@ -97,10 +96,31 @@ class IMUDataset:
             plt.title(file)
             plt.legend(df.columns)
             plt.show()
+            
+
+def read_single_file(path):
+    df = pd.read_excel(path, header=None)
+    return df.dropna(axis=1)
+
+def process_all_data_individually(in_folder):
+    out_folder = '{0}_{1}'.format('processed', in_folder)
+    
+    for file in os.listdir(in_folder):
+        df = read_single_file(os.path.join(in_folder, file))
+        imu = IMUDataset(df=df)
+        header = imu.grab_imu_header()
+        imu.header_from_dict(header)
+        
+        
+        out_path = os.path.join(out_folder, '{0}_{1}'.format('processed', file))
+        if not os.path.exists(out_folder):
+            os.mkdir(out_folder)
+        imu.df.to_excel(out_path, index=False)
     
 
 if __name__ == '__main__':
-    path = 'ml_data_v2'
+    process_all_data_individually('ml_data_v2')
+    # path = 'ml_data_v2'
     # path = 'train_data/Keller_Emily_Walking4.xlsx'
     # data = pd.read_excel(path, header=None)
     
@@ -110,6 +130,6 @@ if __name__ == '__main__':
     # imu.header_from_dict(header)
     # imu.df.to_excel('merged_data.xlsx', index=False)
     
-    imu = IMUDataset(path='ml_data_v2')
-    imu.plot_each_feature()
+    # imu = IMUDataset(path='ml_data_v2')
+    # imu.plot_each_feature()
     
