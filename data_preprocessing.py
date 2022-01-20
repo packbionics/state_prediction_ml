@@ -100,7 +100,7 @@ class IMUDataset:
 
 def read_single_file(path):
     df = pd.read_excel(path, header=None)
-    return df.dropna(axis=1)
+    return df.dropna(axis=1, how='all')
 
 def process_all_data_individually(in_folder):
     out_folder = '{0}_{1}'.format('processed', in_folder)
@@ -116,10 +116,21 @@ def process_all_data_individually(in_folder):
         if not os.path.exists(out_folder):
             os.mkdir(out_folder)
         imu.df.to_excel(out_path, index=False)
+        
+def process_single_file(path, out_name):
+    df = read_single_file(path)
+    print(df)
+    imu = IMUDataset(df=df)
+    header = imu.grab_imu_header()
+    imu.header_from_dict(header)
+    
+    imu.df.to_excel(out_name, index=False)
     
 
 if __name__ == '__main__':
-    process_all_data_individually('ml_data_v2')
+    # process_all_data_individually('ml_data_v2')
+    
+    process_single_file('standing_still.xlsx', 'processed_standing_still.xlsx')
     # path = 'ml_data_v2'
     # path = 'train_data/Keller_Emily_Walking4.xlsx'
     # data = pd.read_excel(path, header=None)
