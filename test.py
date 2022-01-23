@@ -33,6 +33,15 @@ print(euler)
 #     tsne.plot_tsne(df, feat, 'Angle_0')
 
 
+
 # standing straight: 120-140 degrees
 # swing forward: 60 degrees
 # swing backwards: above 180 (sometimes clips)
+
+# fix euler3 first
+# 1. classify states using euler3
+# 2. use all features to predict state
+
+# 1. identify peaks
+# 2. classify based on peaks (forward, backward) derivatives
+# 3. identify 0 - 100 of gait cycle
