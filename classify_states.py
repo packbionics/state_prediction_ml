@@ -47,6 +47,7 @@ if __name__ == '__main__':
     scaler = MinMaxScaler()
     new_euler3 = scaler.fit_transform(np.array(new_euler3).reshape(-1, 1))
     
+    window_size = 5  # Window size in each direction
     
     # Plotting
     fig, (ax1, ax2) = plt.subplots(2)
@@ -60,13 +61,14 @@ if __name__ == '__main__':
     
     # Identify and plot euler peaks
     peak_indices = find_peaks(np.squeeze(new_euler3))[0]
-    ax1.scatter(time[peak_indices], new_euler3[peak_indices], color='black', label='Peaks')
+    peak_windows = np.array([range(-window_size - 1 + peak, window_size + peak) for peak in peak_indices]).flatten()
+    ax1.scatter(time[peak_windows], new_euler3[peak_windows], color='black', label='Peaks')
     
     # Identify and plot gradient peaks
     grad_peak_indices = find_peaks(grad, prominence=.1)[0]
-    ax1.scatter(time[grad_peak_indices], new_euler3[grad_peak_indices])
+    ax1.scatter(time[grad_peak_indices], new_euler3[grad_peak_indices], color='blue', label='Gradient peaks')
     grad_valley_indices = find_peaks(-grad, prominence=.1)[0]
-    ax1.scatter(time[grad_valley_indices], new_euler3[grad_valley_indices])
+    ax1.scatter(time[grad_valley_indices], new_euler3[grad_valley_indices], color='orange', label='Gradient valleys')
     
     # Plot configs
     plt.xlabel('time')

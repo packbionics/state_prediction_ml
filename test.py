@@ -42,6 +42,7 @@ print(euler)
 # 1. classify states using euler3
 # 2. use all features to predict state
 
+
 # 1. identify peaks
 # 2. classify based on peaks (forward, backward) derivatives
 # 3. identify 0 - 100 of gait cycle
