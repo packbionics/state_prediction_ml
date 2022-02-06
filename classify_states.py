@@ -21,6 +21,8 @@ class StateClassifier:
         self.states = {0: self.standing_straight, -40: self.forward_swing, 50: self.backward_swing}  # degrees
         
     def classify(self):
+        """Classifies datapoints into each state in self.states
+        """
         for ang, t in zip(self.euler, self.time):
             if ang <= self.third:
                 self.states[-40][0].append(t)
@@ -41,11 +43,11 @@ if __name__ == '__main__':
     euler3 = df.Euler1_2
     
     # Fix clipping
-    new_euler3 = FixClip(euler3).new_euler
+    new_euler3 = np.array(FixClip(euler3).new_euler)
     
     # Scale euler between -1 and 1
     scaler = MinMaxScaler()
-    new_euler3 = scaler.fit_transform(np.array(new_euler3).reshape(-1, 1))
+    new_euler3 = scaler.fit_transform(new_euler3.reshape(-1, 1))
     
     window_size = 5  # Window size in each direction
     
@@ -62,13 +64,32 @@ if __name__ == '__main__':
     # Identify and plot euler peaks
     peak_indices = find_peaks(np.squeeze(new_euler3))[0]
     peak_windows = np.array([range(-window_size - 1 + peak, window_size + peak) for peak in peak_indices]).flatten()
-    ax1.scatter(time[peak_windows], new_euler3[peak_windows], color='black', label='Peaks')
+    # ax1.scatter(time[peak_windows], new_euler3[peak_windows], color='black', label='Peaks')
     
     # Identify and plot gradient peaks
     grad_peak_indices = find_peaks(grad, prominence=.1)[0]
-    ax1.scatter(time[grad_peak_indices], new_euler3[grad_peak_indices], color='blue', label='Gradient peaks')
+    # grad_peak_windows = np.array([range(-window_size - 1 + peak, window_size + peak) for peak in grad_peak_indices]).flatten()
+    test_scatters = []
+    test_scatters_time = []
+    test_scatters_2 = []
+    test_scatters_2_time = []
+    print(peak_windows)
+    # print(time[~peak_windows])
+    # for t, x, dx in zip(time[~peak_windows], new_euler3[~peak_windows], grad[~peak_windows]):
+    #     if dx < 0:
+    #         test_scatters.append(x)
+    #         test_scatters_time.append(t)
+    #     else:
+    #         test_scatters_2.append(x)
+    #         test_scatters_2_time.append(t)
+    print(test_scatters_time)
+    ax1.scatter(test_scatters_time, test_scatters, color='blue')
+    ax1.scatter(test_scatters_2_time, test_scatters_2, color='red')
+    # ax1.scatter(time[grad_peak_windows], new_euler3[grad_peak_windows], color='blue', label='Gradient peaks')
     grad_valley_indices = find_peaks(-grad, prominence=.1)[0]
-    ax1.scatter(time[grad_valley_indices], new_euler3[grad_valley_indices], color='orange', label='Gradient valleys')
+    # ax1.scatter(time[grad_valley_indices], new_euler3[grad_valley_indices], color='orange', label='Gradient valleys')
+    
+    # ax1.scatter(time, new_euler3)
     
     # Plot configs
     plt.xlabel('time')
