@@ -17,7 +17,7 @@ class StateClassifier:
         
         pass
     
-    def clean_euler3(euler3):
+    def clean_euler3(self, euler3):
         """Cleans euler3 data from IMU brace 1.0 measurement, normalizes between -1 and 1.
 
         Args:
@@ -34,16 +34,25 @@ class StateClassifier:
         scaler = MinMaxScaler()
         new_euler3 = scaler.fit_transform(new_euler3.reshape(-1, 1))
         
-        return euler3
+        return new_euler3
     
-    def gradient(euler3):
+    def gradient(self, euler3):
         return np.gradient(np.squeeze(euler3))
-        
-    def peak_windows(y, prominence, window_size):
-        peaks = find_peaks(y, prominence=prominence)[0]
-        return np.array([range(-window_size - 1 + peak, window_size + peak) for peak in peaks]).flatten()
     
-    def classify_grad_sign(grad, ):
+    def peak_windows(self, y, prominence, window_size):  # *
+        peaks = find_peaks(y, prominence=prominence)[0]
+        
+        lower_bounds = [peak - window_size for peak in peaks]
+        upper_bounds = [window_size + peak + 1 for peak in peaks]
+        
+        out = []
+        for lb, ub in zip(lower_bounds, upper_bounds):
+            if ub < len(y) + 1:
+                out += list(range(lb, ub))
+            else:
+                out += list(range(lb, len(y)))
+                
+        return np.array(out)
         
 
 if __name__ == '__main__':
