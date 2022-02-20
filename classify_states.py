@@ -36,7 +36,7 @@ class StateClassifier:
 
 if __name__ == '__main__':
     # Params
-    window_size = 10  # Window size in each direction
+    window_size = 6  # Window size in each direction
     
     # Read in data
     df = pd.read_excel('processed_ml_data_v2\processed_Keller_Emily_Walking5.xlsx')
@@ -66,7 +66,8 @@ if __name__ == '__main__':
     peak_windows = np.array([range(-window_size - 1 + peak, window_size + peak) 
                              for peak in peak_indices]).flatten()
     print("test", peak_windows)
-    ax1.scatter(time[peak_windows], new_euler3[peak_windows], color='black', label='Peaks')
+    ax1.scatter(time[peak_indices], new_euler3[peak_indices], color='black', label='Peaks')
+    plt.show()
     
     # Identify gradient window peaks
     grad_peak_indices = find_peaks(grad, prominence=.1)[0]

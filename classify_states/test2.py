@@ -12,3 +12,8 @@ time = df.Time_0
 euler3 = df.Euler1_2
 
 classifier.classify(euler3, time)
+
+grad = classifier.gradient(euler3)
+
+plt.plot(list(range(len(grad))), grad)
+plt.show()
