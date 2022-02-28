@@ -1,4 +1,4 @@
-import tsne
+import not_used.tsne as tsne
 import pandas as pd
 import matplotlib.pyplot as plt
 

@@ -1,11 +1,8 @@
-import sys
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
 
 from test_skeleton import Skeleton
-
-sys.path.append('..')
 from classify_states.classify_states_2 import StateClassifier
 
 
@@ -15,7 +12,7 @@ from classify_states.classify_states_2 import StateClassifier
 
 class ClassifierSkeleton(Skeleton):
     def __init__(self):
-        super.__init__
+        super().__init__()
         self.test_df = pd.read_excel('processed_Harm_Jordan_Walking.xlsx')
         self.state_classifier = StateClassifier()
 
@@ -33,10 +30,14 @@ class CleaningTests(ClassifierSkeleton):
     def test_clean_euler3(self):
         euler3 = self.test_df.Euler1_2
         new_euler3 = self.state_classifier.clean_euler3(euler3)
-        mask = [True if x <= 1 and x >= -1 else False for x in new_euler3]
+        
+        # Round to ten decimal places to account for any, extremely miniscule, deviations
+        mask = [True if round(x, 10) <= 1 and round(x, 10) >= -1 else False for x in new_euler3]
+        
+        # Test that everything is scaled between -1 and 1
         assert np.array_equal(new_euler3[mask], new_euler3)
         
         
 if __name__ == '__main__':
-    ClassifierTests().run_all_tests()
+    # ClassifierTests().run_all_tests()
     CleaningTests().run_all_tests()

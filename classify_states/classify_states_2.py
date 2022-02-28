@@ -2,11 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
-
-import sys
-sys.path.append('..')
-from data_clip_fix import FixClip
 from scipy.signal import find_peaks
+
+from data_clip_fix import FixClip
 
 
 class StateClassifier:
@@ -34,7 +32,7 @@ class StateClassifier:
     #     plt.scatter(time[mask], euler3[mask], s=.5)
     #     plt.show()
     
-    def clean_euler3(self, euler3):
+    def clean_euler3(self, euler3):  # *
         """Cleans euler3 data from IMU brace 1.0 measurement, normalizes between -1 and 1.
 
         Args:
