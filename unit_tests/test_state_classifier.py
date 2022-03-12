@@ -3,7 +3,7 @@ import numpy as np
 from scipy.signal import find_peaks
 
 from test_skeleton import Skeleton
-from classify_states.classify_states_2 import StateClassifier
+from classify_states.classify_states import StateClassifier
 
 
 # def peak_windows(y, prominence, window_size):
