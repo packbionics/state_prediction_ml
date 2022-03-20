@@ -1,3 +1,4 @@
+from turtle import xcor
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -70,6 +71,14 @@ class StateClassifier:
             df.loc[val.astype(bool), 'classification'] = key
             
         return df
+    
+    def peak_valley_windows(self, x, window_size, prominence=0.1):
+        peak_windows = self.peak_windows(x, window_size, prominence)
+        valley_windows = self.valley_windows(x, window_size, prominence)
+        return peak_windows, valley_windows
+
+    def windows(self, x, window_size):
+        
         
 
 if __name__ == '__main__':
