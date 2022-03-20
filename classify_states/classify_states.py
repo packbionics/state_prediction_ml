@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from scipy.signal import find_peaks
+from stse import one_hot
 
 from data_clip_fix import FixClip
 
@@ -10,27 +11,6 @@ from data_clip_fix import FixClip
 class StateClassifier:
     def __init__(self) -> None:
         pass
-                
-    # def classify(self, euler3, time):
-    #     euler3 = self.clean_euler3(euler3)
-    #     plt.plot(range(len(euler3)), euler3)
-    #     grad_euler3 = self.gradient(euler3)
-    #     # plt.plot(range(len(euler3)), grad_euler3)
-    #     plt.show()
-        
-    #     peak_windows = self.peak_windows(euler3, 0.6)
-    #     valley_windows = self.valley_windows(euler3, 0.6)
-        
-    #     mask = np.ones(euler3.size, dtype=bool)
-    #     print(np.concatenate((peak_windows, valley_windows)))
-    #     mask[np.concatenate((peak_windows, valley_windows))] = False
-    #     not_peaks = euler3[mask]
-    #     print(not_peaks)
-        
-    #     plt.scatter(time[peak_windows], euler3[peak_windows], color='black', label='Peaks', s=.5)
-    #     plt.scatter(time[valley_windows], euler3[valley_windows], color='black', label='Peaks', s=.5)
-    #     plt.scatter(time[mask], euler3[mask], s=.5)
-    #     plt.show()
     
     def clean_euler3(self, euler3):  # *
         """Cleans euler3 data from IMU brace 1.0 measurement, normalizes between -1 and 1.
@@ -83,25 +63,13 @@ class StateClassifier:
         """
         return self.peak_windows(y, window_size, prominence, scalar=-1)
     
-def bit_vect(length, indices):
-    """Generates a bit vector, hot at each index.
-
-    Args:
-        length (int): Length of desired bit vector.
-        length
-        indices (iter(int)): List of indices to equal 1.
-
-    Returns:
-        np.array: bit vector.
-    """
-    out = np.zeros(length)
-    out[indices] = 1
-    return out
-
-def remove_bit_vect_overlap(bit_vect, overlap_vect):
-    overlap_vect = overlap_vect.astype(bool)
-    bit_vect[overlap_vect] = 0
-    return bit_vect
+    def assign_classification(self, df, class_dict):
+        df['classification'] = np.zeros(len(df))
+        
+        for key, val in class_dict.items():
+            df.loc[val.astype(bool), 'classification'] = key
+            
+        return df
         
 
 if __name__ == '__main__':
@@ -111,7 +79,8 @@ if __name__ == '__main__':
     peak_window_size = 2  # number of pts to look outward
     
     # Import data and extract time and forward facing euler (z-axis)
-    df = pd.read_excel('../processed_ml_data_v2/processed_Keller_Emily_Walking5.xlsx')
+    df = pd.read_excel('data/processed_ml_data_v2/processed_Keller_Emily_Walking5.xlsx')
+    # /home/jacob/git_repos/state_prediction_ml/data/processed_ml_data_v2/processed_Keller_Emily_Walking5.xlsx
     time = df.Time_0.to_numpy()
     euler3 = df.Euler1_2
     
@@ -121,6 +90,9 @@ if __name__ == '__main__':
     # Calculate gradient
     grad_euler3 = classifier.gradient(clean_euler3)
     
+    # Initialize classification dict
+    bit_vect_dict = {}
+    
     # Find signal peaks and valley windows for euler and gradient
     peak_windows = classifier.peak_windows(clean_euler3, peak_window_size, 0.1)
     valley_windows = classifier.valley_windows(clean_euler3, peak_window_size, 0.1)
@@ -128,50 +100,69 @@ if __name__ == '__main__':
     grad_valley_windows = classifier.valley_windows(grad_euler3, peak_window_size, 0.1)
     
     # Sparsify bit vectors for euler and gradient
-    peak_bit_vect = bit_vect(len(clean_euler3), peak_windows)
-    valley_bit_vect = bit_vect(len(clean_euler3), valley_windows)
-    grad_peak_bit_vect = bit_vect(len(grad_euler3), grad_peak_windows)
-    grad_valley_bit_vect = bit_vect(len(grad_euler3), grad_valley_windows)
+    bit_vect_dict['peak'] = one_hot.bit_vect(len(clean_euler3), peak_windows)
+    bit_vect_dict['valley'] = one_hot.bit_vect(len(clean_euler3), valley_windows)
+    bit_vect_dict['grad_peak'] = one_hot.bit_vect(len(grad_euler3), grad_peak_windows)
+    bit_vect_dict['grad_valley'] = one_hot.bit_vect(len(grad_euler3), grad_valley_windows)
     
     # Remove overlap progressively
     # Priority order: peak, valley, grad_peak, grad_valley
-    valley_bit_vect = remove_bit_vect_overlap(valley_bit_vect, peak_bit_vect)
-    grad_peak_bit_vect = remove_bit_vect_overlap(grad_peak_bit_vect, peak_bit_vect + valley_bit_vect)
-    grad_valley_bit_vect = remove_bit_vect_overlap(grad_valley_bit_vect, peak_bit_vect + valley_bit_vect + 
-                                                   grad_peak_bit_vect)
+    valley_bit_vect = one_hot.remove_hot_overlap(bit_vect_dict['valley'], bit_vect_dict['peak'])
+    grad_peak_bit_vect = one_hot.remove_hot_overlap(bit_vect_dict['grad_peak'], bit_vect_dict['peak'] +
+                                                    bit_vect_dict['valley'])
+    grad_valley_bit_vect = one_hot.remove_hot_overlap(bit_vect_dict['grad_valley'], bit_vect_dict['peak'] + 
+                                                      bit_vect_dict['valley'] + bit_vect_dict['grad_peak'])
     
-    
-    peak_valley_bit_vect = peak_bit_vect + valley_bit_vect + valley_bit_vect + grad_peak_bit_vect + grad_valley_bit_vect
+    peak_valley_bit_vect = sum(bit_vect_dict.values())
     peak_valley_bit_vect = peak_valley_bit_vect.astype(bool)
-    # Classify all remaining pts by sign of gradient
-    pos_grad_t = []
-    pos_grad_x = []
-    neg_grad_t = []
-    neg_grad_x = []
+    
+    
+    # # Classify all remaining pts by sign of gradient
+    # pos_grad_t = []
+    # pos_grad_x = []
+    # neg_grad_t = []
+    # neg_grad_x = []
     
     
     
-    # Loop through not peak values and classify according to gradient sign
-    for t, x, dx in zip(time[~peak_valley_bit_vect], clean_euler3[~peak_valley_bit_vect],
-                        grad_euler3[~peak_valley_bit_vect]):
-        if dx <= 0:
-            neg_grad_t.append(t)
-            neg_grad_x.append(x)
-        else:
-            pos_grad_t.append(t)
-            pos_grad_x.append(x)
+    # # Loop through not peak values and classify according to gradient sign
+    # for t, x, dx in zip(time[~peak_valley_bit_vect], clean_euler3[~peak_valley_bit_vect],
+    #                     grad_euler3[~peak_valley_bit_vect]):
+    #     if dx <= 0:
+    #         neg_grad_t.append(t)
+    #         neg_grad_x.append(x)
+    #     else:
+    #         pos_grad_t.append(t)
+    #         pos_grad_x.append(x)
+    
+    bit_vect_dict['pos_grad'] = np.zeros(len(peak_valley_bit_vect))
+    bit_vect_dict['neg_grad'] = np.zeros(len(peak_valley_bit_vect))
+    for i, bit in enumerate(peak_valley_bit_vect):
+        dx = grad_euler3[i]
+        if int(bit) == 0 and dx <= 0:
+            bit_vect_dict['neg_grad'][i] = 1
+        elif int(bit) == 0 and dx > 0:
+            bit_vect_dict['pos_grad'][i] = 1
             
-    # plt.plot(time, clean_euler3, zorder=-1)
-    plt.scatter(time[peak_windows], clean_euler3[peak_windows], color='b')
-    plt.scatter(time[valley_windows], clean_euler3[valley_windows], color='b')
-    plt.scatter(time[grad_peak_windows], clean_euler3[grad_peak_windows], color='b')
-    plt.scatter(time[grad_valley_windows], clean_euler3[grad_valley_windows], color='b')
-    plt.scatter(pos_grad_t, pos_grad_x, color='b')
-    plt.scatter(neg_grad_t, neg_grad_x, color='b')
-    plt.figure()
-    plt.scatter(time, clean_euler3)
-    plt.show()
+    # # plt.plot(time, clean_euler3, zorder=-1)
+    # plt.scatter(time[peak_windows], clean_euler3[peak_windows], color='b')
+    # plt.scatter(time[valley_windows], clean_euler3[valley_windows], color='b')
+    # plt.scatter(time[grad_peak_windows], clean_euler3[grad_peak_windows], color='b')
+    # plt.scatter(time[grad_valley_windows], clean_euler3[grad_valley_windows], color='b')
+    # plt.scatter(pos_grad_t, pos_grad_x, color='b')
+    # plt.scatter(neg_grad_t, neg_grad_x, color='b')
+    # plt.figure()
+    # plt.scatter(time, clean_euler3)
+    # plt.show()
     
-    # Print out accounted for length
-    assert sum(peak_valley_bit_vect) + len(pos_grad_t) + len(neg_grad_t) == len(clean_euler3)
+    # Ensure all points are accounted for
+    assert sum(peak_valley_bit_vect) + sum(bit_vect_dict['neg_grad']) + sum(bit_vect_dict['pos_grad']) \
+        == len(clean_euler3)
+    
+    
+    ape = classifier.assign_classification(df, bit_vect_dict)
+    
+    print(ape['classification'])
+    
+    
             
