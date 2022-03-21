@@ -11,6 +11,7 @@ from data_clip_fix import FixClip
 
 class StateClassifier:
     def __init__(self) -> None:
+        self.peak_window_size = 2
         pass
     
     def clean_euler3(self, euler3):  # *
@@ -76,13 +77,45 @@ class StateClassifier:
         peak_windows = self.peak_windows(x, window_size, prominence)
         valley_windows = self.valley_windows(x, window_size, prominence)
         return peak_windows, valley_windows
-
-    def windows(self, x, window_size):
+    
+    def get_bit_vects(self, length, ):
+         # Find signal peaks and valley windows for euler and gradient
+        peak_windows, valley_windows = self.peak_valley_windows(clean_euler3, self.peak_window_size)
+        grad_peak_windows, grad_valley_windows = self.peak_valley_windows(grad_euler3, self.peak_window_size)
+    
+    def peak_valley_bit_vects(self, length, peak_windows, valley_windows, grad_peak_windows, grad):
+        bit_vect_dict = {}
+        bit_vect_dict['peak'] = one_hot.bit_vect(len(clean_euler3), peak_windows)
+        bit_vect_dict['valley'] = one_hot.bit_vect(len(clean_euler3), valley_windows)
+        bit_vect_dict['grad_peak'] = one_hot.bit_vect(len(grad_euler3), grad_peak_windows)
+        bit_vect_dict['grad_valley'] = one_hot.bit_vect(len(grad_euler3), grad_valley_windows)
+    
+    def classify(self, df, euler3_name, time_name):
+        # Clean euler data
+        euler3 = df[euler3_name]
+        clean_euler3 = self.clean_euler3(euler3)
+        
+        grad_euler3 = self.gradient(clean_euler3)
+        
+        # Initialize classification dict
+        bit_vect_dict = {}
+        
+        # Find signal peaks and valley windows for euler and gradient
+        peak_windows, valley_windows = self.peak_valley_windows(clean_euler3, self.peak_window_size)
+        grad_peak_windows, grad_valley_windows = self.peak_valley_windows(grad_euler3, self.peak_window_size)
+        
+        # Sparsify bit vectors for euler and gradient
+    bit_vect_dict['peak'] = one_hot.bit_vect(len(clean_euler3), peak_windows)
+    bit_vect_dict['valley'] = one_hot.bit_vect(len(clean_euler3), valley_windows)
+    bit_vect_dict['grad_peak'] = one_hot.bit_vect(len(grad_euler3), grad_peak_windows)
+    bit_vect_dict['grad_valley'] = one_hot.bit_vect(len(grad_euler3), grad_valley_windows)
+        
         
         
 
 if __name__ == '__main__':
     classifier = StateClassifier()
+    classifier.classify()
     
     # Window size for peak and valleys
     peak_window_size = 2  # number of pts to look outward
