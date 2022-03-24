@@ -3,7 +3,6 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from scipy.signal import find_peaks
 from stse import one_hot
-import plotly.express as px
 
 from data_clip_fix import FixClip
 
@@ -20,18 +19,7 @@ class StateClassifier:
         # fig.show()
         
         # Calculate gradient
-        self.grad_euler3 = self.__gradient(self.euler3)
-    
-    def __gradient(self, x):
-        """Returns gradient of array.
-
-        Args:
-            euler3 (arraylike): Input to take derivative of.
-
-        Returns:
-            arraylike: Gradient of x.
-        """
-        return np.gradient(np.squeeze(x))
+        self.grad_euler3 = np.gradient(self.euler3)
     
     def __peak_windows(self, y, radius, scalar=1.0):  # *
         """Generates windows for peak points in signal according to window size.
@@ -172,8 +160,8 @@ if __name__ == '__main__':
         classifier.peak_window_radius = 2  # number of pts to look outward
         
         df = classifier.classify()
-        
-        df.to_excel(f'{out_dir}classified_{file}')
+        print(df)
+        # df.to_excel(f'{out_dir}classified_{file}')
     
     # Plot
     # fig = px.scatter(df, x='Time_0', y='Euler1_2', color='classification')
