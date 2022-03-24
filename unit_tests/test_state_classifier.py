@@ -22,7 +22,7 @@ class ClassifierTests(ClassifierSkeleton):
         test_y = 10*[1] + [5] + 10*[1] + [5, 1]
         window_size = 3
         test_x = np.array([7, 8, 9, 10, 11, 12, 13, 18, 19, 20, 21, 22])
-        assert np.array_equal(self.state_classifier.peak_windows(test_y, prominence=0.1, window_size=window_size), 
+        assert np.array_equal(self.state_classifier.__peak_windows(test_y, prominence=0.1, window_size=window_size), 
                               test_x)
 
 
