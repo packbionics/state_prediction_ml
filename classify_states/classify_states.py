@@ -1,8 +1,5 @@
-from doctest import DocFileCase
-from turtle import xcor
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from scipy.signal import find_peaks
 from stse import one_hot
@@ -12,12 +9,12 @@ from data_clip_fix import FixClip
 
 
 class StateClassifier:
-    def __init__(self, df, new_euler) -> None:
+    def __init__(self, df, euler_name) -> None:
         # Mutable variables
         self.peak_window_radius = 2
         self.prominence = 0.1
         
-        self.euler3 = new_euler
+        self.euler3 = df[euler_name]
         
         # fig = px.scatter(x=range(len(self.euler3)), y=self.euler3)
         # fig.show()
@@ -133,50 +130,54 @@ class StateClassifier:
         print(bit_vect_dict)
         return self.__assign_classification(df, bit_vect_dict)
         
-        
+def clean_euler3(euler3):  # *
+    """Cleans euler3 data from IMU brace 1.0 measurement, normalizes between -1 and 1.
+
+    Args:
+        euler3 (iterable): Contains euler angles in the plane of forward movement.
+
+    Returns:
+        iterable: Cleaned euler angles.
+    """
+    
+    # Fix clipping issue
+    new_euler3 = np.array(FixClip(euler3).new_euler)
+    
+    # Scale euler between -1 and 1
+    scaler = MinMaxScaler((-1, 1))
+    new_euler3 = new_euler3.reshape(-1, 1)
+    new_euler3 = scaler.fit_transform(new_euler3)
+    
+    return np.squeeze(new_euler3)
         
         
 
 if __name__ == '__main__':
     # Import data
-    df = pd.read_excel('data/processed_ml_data_v2/processed_Keller_Emily_Walking5.xlsx')
+    in_dir = 'data/processed_ml_data_v2/'
+    out_dir = 'data/classified/'
     
-    def clean_euler3(euler3):  # *
-        """Cleans euler3 data from IMU brace 1.0 measurement, normalizes between -1 and 1.
-
-        Args:
-            euler3 (iterable): Contains euler angles in the plane of forward movement.
-
-        Returns:
-            iterable: Cleaned euler angles.
-        """
+    import os
+    for file in os.listdir(in_dir):
+    
+        df = pd.read_excel(in_dir + file)
         
-        # Fix clipping issue
-        new_euler3 = np.array(FixClip(euler3).new_euler)
+        # Fix clipping and scale between -1 and 1
+        df['Euler1_2'] = clean_euler3(df['Euler1_2'])
+        #  = new_euler
         
-        # Scale euler between -1 and 1
-        scaler = MinMaxScaler((-1, 1))
-        new_euler3 = new_euler3.reshape(-1, 1)
-        new_euler3 = scaler.fit_transform(new_euler3)
+        classifier = StateClassifier(df, 'Euler1_2')
         
-        return np.squeeze(new_euler3)
-    
-    # Fix clipping and scale between -1 and 1
-    new_euler = clean_euler3(df['Euler1_2'])
-    df['Euler1_2'] = new_euler
-    
-    print(df)
-    
-    classifier = StateClassifier(df, new_euler)
-    
-    # Window size for peak and valleys
-    classifier.peak_window_radius = 2  # number of pts to look outward
-    
-    df = classifier.classify()
+        # Window size for peak and valleys
+        classifier.peak_window_radius = 2  # number of pts to look outward
+        
+        df = classifier.classify()
+        
+        df.to_excel(f'{out_dir}classified_{file}')
     
     # Plot
-    fig = px.scatter(df, x='Time_0', y='Euler1_2', color='classification')
-    fig.show()
+    # fig = px.scatter(df, x='Time_0', y='Euler1_2', color='classification')
+    # fig.show()
     
     
         
