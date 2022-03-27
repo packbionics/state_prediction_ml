@@ -161,7 +161,7 @@ if __name__ == '__main__':
         
         df = classifier.classify()
         print(df)
-        # df.to_excel(f'{out_dir}classified_{file}')
+        df.to_excel(f'{out_dir}classified_{file}', index=False)
     
     # Plot
     # fig = px.scatter(df, x='Time_0', y='Euler1_2', color='classification')
