@@ -1,10 +1,7 @@
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
-from sklearn.metrics import mean_absolute_error as mae
-import numpy as np
-import random
 
 
 ## REPLACE WITH ML_TOOLS FUNCTION
@@ -19,13 +16,22 @@ def categorical_encode(values):
     return onehot_encoder.fit_transform(integer_encoded)
 
 
-def one_hot_acc(y_true, y_pred):
-    out = [np.array_equal(t, p) for t, p in zip(y_true, y_pred)]
-    return sum(out)/len(out)
-    
+dtc = DecisionTreeClassifier()
 
 
-dtc = DecisionTreeClassifier(max_depth=2, random_state=42)
+params_dict = {
+ 'criterion': ['gini', 'entropy'],
+ 'max_depth': [None, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+#  'min_samples_split': [2, 3, 4, 5, 6, 7, 8, 9, 10],
+#  'min_samples_leaf': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+#  'min_weight_fraction_leaf': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+#  'max_features': [None, 'auto', 'sqrt', 'log2'],
+#  'random_state': [None, 42],
+#  'max_leaf_nodes': [None, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+#  'min_impurity_decrease': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+#  'class_weight': [None, 'balanced'],
+#  'cpp_alpha': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+}
 
 
 
@@ -40,8 +46,12 @@ y = categorical_encode(df['classification'])
 X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.3, shuffle=False)
 # X_val, X_test, y_val, y_test = train_test_split(X_val, y_val, test_size=0.5, shuffle=False)
 
-dtc.fit(X_train, y_train)
+grid_search = GridSearchCV(dtc, params_dict, cv=5)
+grid_search.fit(X_train, y_train)
+tuned_dtc = grid_search.best_estimator_
+print(tuned_dtc)
 
-print('Train accuracy:', dtc.score(X_train, y_train))
-print('Val accuracy:', dtc.score(X_val, y_val))
+print('Train accuracy:', tuned_dtc.score(X_train, y_train))
+print('Val accuracy:', tuned_dtc.score(X_val, y_val))
+print(cross_val_score(tuned_dtc, X, y, cv=5))
 # print('Test accuracy: {0}'.format(dtc.score(X_test, y_test)))
