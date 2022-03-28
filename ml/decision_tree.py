@@ -3,6 +3,8 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from sklearn.metrics import mean_absolute_error as mae
+import numpy as np
+import random
 
 
 ## REPLACE WITH ML_TOOLS FUNCTION
@@ -17,7 +19,13 @@ def categorical_encode(values):
     return onehot_encoder.fit_transform(integer_encoded)
 
 
-dtc = DecisionTreeClassifier()
+def one_hot_acc(y_true, y_pred):
+    out = [np.array_equal(t, p) for t, p in zip(y_true, y_pred)]
+    return sum(out)/len(out)
+    
+
+
+dtc = DecisionTreeClassifier(max_depth=2, random_state=42)
 
 
 
@@ -30,8 +38,10 @@ y = categorical_encode(df['classification'])
 
 # Split data into train, test, val
 X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.3, shuffle=False)
-X_val, X_test, y_val, y_test = train_test_split(X_val, y_val, test_size=0.5, shuffle=False)
+# X_val, X_test, y_val, y_test = train_test_split(X_val, y_val, test_size=0.5, shuffle=False)
 
 dtc.fit(X_train, y_train)
 
-print(mae(y_train, dtc.predict(X_train)))
+print('Train accuracy:', dtc.score(X_train, y_train))
+print('Val accuracy:', dtc.score(X_val, y_val))
+# print('Test accuracy: {0}'.format(dtc.score(X_test, y_test)))
