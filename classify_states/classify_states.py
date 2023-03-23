@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from scipy.signal import find_peaks
-from stse import one_hot
+from stse import bytes_vect
+import plotly.express as px
 
 from data_clip_fix import FixClip
 
@@ -76,17 +77,17 @@ class StateClassifier:
         length = len(self.euler3)
         bit_vect_dict = {}
         
-        bit_vect_dict['peak'] = one_hot.bit_vect(length, peak_windows)
-        bit_vect_dict['valley'] = one_hot.bit_vect(length, valley_windows)
-        bit_vect_dict['grad_peak'] = one_hot.bit_vect(length, grad_peak_windows)
-        bit_vect_dict['grad_valley'] = one_hot.bit_vect(length, grad_valley_windows)
+        bit_vect_dict['peak'] = bytes_vect.bit_vect(length, peak_windows)
+        bit_vect_dict['valley'] = bytes_vect.bit_vect(length, valley_windows)
+        bit_vect_dict['grad_peak'] = bytes_vect.bit_vect(length, grad_peak_windows)
+        bit_vect_dict['grad_valley'] = bytes_vect.bit_vect(length, grad_valley_windows)
         
         # Remove overlap progressively
         # Priority order: peak, valley, grad_peak, grad_valley
-        bit_vect_dict['valley'] = one_hot.remove_hot_overlap(bit_vect_dict['valley'], bit_vect_dict['peak'])
-        bit_vect_dict['grad_peak'] = one_hot.remove_hot_overlap(bit_vect_dict['grad_peak'], bit_vect_dict['peak'] +
+        bit_vect_dict['valley'] = bytes_vect.remove_hot_overlap(bit_vect_dict['valley'], bit_vect_dict['peak'])
+        bit_vect_dict['grad_peak'] = bytes_vect.remove_hot_overlap(bit_vect_dict['grad_peak'], bit_vect_dict['peak'] +
                                                                 bit_vect_dict['valley'])
-        bit_vect_dict['grad_valley'] = one_hot.remove_hot_overlap(bit_vect_dict['grad_valley'], bit_vect_dict['peak'] + 
+        bit_vect_dict['grad_valley'] = bytes_vect.remove_hot_overlap(bit_vect_dict['grad_valley'], bit_vect_dict['peak'] + 
                                                                   bit_vect_dict['valley'] + bit_vect_dict['grad_peak'])
         
         return bit_vect_dict
@@ -146,7 +147,7 @@ if __name__ == '__main__':
     out_dir = 'data/classified/'
     
     import os
-    for file in os.listdir(in_dir):
+    for file in os.listdir(in_dir)[:3]:
     
         df = pd.read_excel(in_dir + file)
         
@@ -164,8 +165,8 @@ if __name__ == '__main__':
         df.to_excel(f'{out_dir}classified_{file}', index=False)
     
     # Plot
-    # fig = px.scatter(df, x='Time_0', y='Euler1_2', color='classification')
-    # fig.show()
+    fig = px.scatter(df, x='Time_0', y='Euler1_2', color='classification')
+    fig.show()
     
     
         
